@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Building2, Download, FileSpreadsheet, GraduationCap, LoaderCircle, Pencil, Upload } from 'lucide-react';
 import { request } from './api.js';
 import { Badge, displayCalendarDate, displayDateTime, displayNumber, Loading, Modal, Notice, Select, useRead } from './components.jsx';
@@ -81,7 +81,7 @@ export function RecordForm({ kind, record, school, close, saved, addSchool }) {
   </Modal>;
 }
 
-export function ImportDialog({ close, saved, studentsOnly = false }) {
+export function ImportDialog({ close, saved, studentsOnly = false, initialFile }) {
   const [file, setFile] = useState(null);
   const [records, setRecords] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -98,10 +98,15 @@ export function ImportDialog({ close, saved, studentsOnly = false }) {
   const schoolOptions = [...schools.entries()].sort((left, right) => left[1].localeCompare(right[1]) || left[0].localeCompare(right[0]));
   const validSchool = schools.has(studentSchool);
 
+  useEffect(() => { if (initialFile) load(initialFile); }, [initialFile]);
+
   async function select(event) {
     const chosen = event.target.files[0];
     event.target.value = '';
-    if (!chosen) return;
+    if (chosen) await load(chosen);
+  }
+
+  async function load(chosen) {
     setBusy(true);
     setError('');
     setRecords(null);

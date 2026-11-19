@@ -110,6 +110,18 @@ a { color: var(--brand-dark); }
 .metric-detail { color: var(--muted); font-size: .77rem; }
 .metric-chevron { position: absolute; top: 18px; right: 12px; color: #8291aa; }
 
+.metrics.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.home-upload { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 15px; margin-bottom: 18px; }
+.home-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 170px; padding: 24px; cursor: pointer; text-align: center; color: #324ab0; border: 2px dashed #aabcfa; border-radius: 13px; background: #f7f9ff; transition: background .15s, border-color .15s; }
+.home-drop:hover, .home-drop.dragging { background: #eaf0ff; border-color: #3857dc; }
+.home-drop:focus-within { outline: 3px solid #8098ff; outline-offset: 3px; }
+.home-drop strong { font-size: 1.08rem; color: var(--ink); }
+.home-drop small { color: var(--muted); font-size: .82rem; }
+.home-drop-icon { display: inline-grid; place-items: center; width: 52px; height: 52px; border-radius: 12px; color: #3857dc; background: #e3e9ff; margin-bottom: 4px; }
+.home-actions { display: flex; flex-direction: column; justify-content: center; gap: 10px; min-width: 190px; }
+.home-actions .button { justify-content: center; }
+.home-ask h2 { display: flex; align-items: center; gap: 7px; margin-bottom: 11px; }
+.home-ask .prompt-list { margin: 11px 0 0; }
 .dashboard-grid { display: grid; grid-template-columns: minmax(0, 1.78fr) minmax(279px, 1fr); gap: 18px; align-items: start; }
 .dashboard-side { display: grid; gap: 17px; min-width: 0; }
 .card-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 66px; padding: 14px 17px; }
@@ -292,7 +304,19 @@ a { color: var(--brand-dark); }
 @media (max-width: 1060px) {
   :root { --sidebar-width: 190px; }
   .sidebar { padding-inline: 12px; }
-  .dashboard-grid { grid-template-columns: minmax(0, 1.58fr) minmax(245px, 1fr); gap: 13px; }
+  .metrics.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.home-upload { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 15px; margin-bottom: 18px; }
+.home-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 170px; padding: 24px; cursor: pointer; text-align: center; color: #324ab0; border: 2px dashed #aabcfa; border-radius: 13px; background: #f7f9ff; transition: background .15s, border-color .15s; }
+.home-drop:hover, .home-drop.dragging { background: #eaf0ff; border-color: #3857dc; }
+.home-drop:focus-within { outline: 3px solid #8098ff; outline-offset: 3px; }
+.home-drop strong { font-size: 1.08rem; color: var(--ink); }
+.home-drop small { color: var(--muted); font-size: .82rem; }
+.home-drop-icon { display: inline-grid; place-items: center; width: 52px; height: 52px; border-radius: 12px; color: #3857dc; background: #e3e9ff; margin-bottom: 4px; }
+.home-actions { display: flex; flex-direction: column; justify-content: center; gap: 10px; min-width: 190px; }
+.home-actions .button { justify-content: center; }
+.home-ask h2 { display: flex; align-items: center; gap: 7px; margin-bottom: 11px; }
+.home-ask .prompt-list { margin: 11px 0 0; }
+.dashboard-grid { grid-template-columns: minmax(0, 1.58fr) minmax(245px, 1fr); gap: 13px; }
   .record-table td, .record-table th { padding-inline: 9px; }
   .record-table td:first-child, .record-table th:first-child { padding-left: 12px; }
   .overview-table .school-mark { width: 32px; height: 32px; flex-basis: 32px; }
@@ -311,10 +335,26 @@ a { color: var(--brand-dark); }
 }
 
 @media (max-width: 740px) {
-  .dashboard-grid { grid-template-columns: minmax(0, 1fr); }
+  .metrics.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.home-upload { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 15px; margin-bottom: 18px; }
+.home-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 170px; padding: 24px; cursor: pointer; text-align: center; color: #324ab0; border: 2px dashed #aabcfa; border-radius: 13px; background: #f7f9ff; transition: background .15s, border-color .15s; }
+.home-drop:hover, .home-drop.dragging { background: #eaf0ff; border-color: #3857dc; }
+.home-drop:focus-within { outline: 3px solid #8098ff; outline-offset: 3px; }
+.home-drop strong { font-size: 1.08rem; color: var(--ink); }
+.home-drop small { color: var(--muted); font-size: .82rem; }
+.home-drop-icon { display: inline-grid; place-items: center; width: 52px; height: 52px; border-radius: 12px; color: #3857dc; background: #e3e9ff; margin-bottom: 4px; }
+.home-actions { display: flex; flex-direction: column; justify-content: center; gap: 10px; min-width: 190px; }
+.home-actions .button { justify-content: center; }
+.home-ask h2 { display: flex; align-items: center; gap: 7px; margin-bottom: 11px; }
+.home-ask .prompt-list { margin: 11px 0 0; }
+.dashboard-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 620px) {
+  .home-upload { grid-template-columns: minmax(0, 1fr); }
+  .home-actions { flex-direction: row; min-width: 0; }
+  .home-actions .button { flex: 1; }
+  .home-drop { min-height: 140px; }
   .page-header { flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 17px; }
   .page-header p { font-size: .92rem; }
   .metrics { gap: 7px; margin-bottom: 13px; }

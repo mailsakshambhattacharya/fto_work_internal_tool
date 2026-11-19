@@ -57,42 +57,44 @@ function PageHeader({ view, actions }) {
 
 function Metrics({ data, navigate }) {
   const metrics = [
-    ['schools', 'Total schools', 'In the registry', Building2, 'blue', 'schools'],
-    ['students', 'Enrolled students', 'Across all schools', GraduationCap, 'green', 'students'],
-    ['updates', 'Recent updates', 'In the last 7 days', History, 'purple', 'history']
+    ['schools', 'Schools', 'In the registry', Building2, 'blue', 'schools'],
+    ['students', 'Students', 'Enrolled across all schools', GraduationCap, 'green', 'students']
   ];
-  return <div className="metrics">{metrics.map(([key, label, detail, Icon, tone, target]) => (
+  return <div className="metrics two">{metrics.map(([key, label, detail, Icon, tone, target]) => (
     <button type="button" key={key} className="metric card" onClick={() => navigate(target)}>
       <span className={`metric-icon ${tone}`}><Icon size={22} strokeWidth={1.9} /></span><span className="metric-content"><span className="metric-label">{label}</span><strong>{displayNumber(data?.[key])}</strong><span className="metric-detail">{detail}</span></span><ChevronRight className="metric-chevron" size={16} />
     </button>
   ))}</div>;
 }
 
-function Overview({ refresh, navigate, open, add, showImport, ask, busy }) {
-  const { data, error, status } = useRead('overview', {}, refresh);
-  const prompts = [data?.schools[0] ? `Who’s the principal at ${data.schools[0].name}?` : 'How many schools are in the registry?', 'How many students are enrolled?'];
+function Overview({ refresh, navigate, add, uploadFile, exportFto, exporting, ask, busy }) {
+  const { data, error } = useRead('overview', {}, refresh);
+  const [dragging, setDragging] = useState(false);
+  const prompts = [data?.schools[0] ? `Who’s the principal at ${data.schools[0].name}?` : 'How many schools are in the registry?', 'How many students are in Grade 10?'];
+  const take = (file) => { setDragging(false); if (file) uploadFile(file); };
   return <>
-    <PageHeader view="overview" actions={<><button className="button secondary" onClick={showImport}><Upload size={17} /> Import Excel</button><button className="button primary" onClick={() => add()}><Plus size={19} /> Add record</button></>} />
+    <PageHeader view="overview" />
     {error && <Notice>{error}</Notice>}
-    <Metrics data={data?.metrics} navigate={navigate} />
-    <div className="dashboard-grid">
-      <section className="card school-card" aria-labelledby="schools-heading">
-        <header className="card-heading"><div><h2 id="schools-heading">Schools</h2><p>Recently updated school records</p></div><button type="button" className="text-button view-all" onClick={() => navigate('schools')}>View all</button></header>
-        {data ? <RecordTable kind="schools" rows={data.schools} onOpen={open} overview emptyAction={<button className="button secondary" onClick={() => add('School')}>Add your first school</button>} /> : status !== 'error' && <Loading />}
-        {data?.schools.length > 0 && <footer className="card-foot">Showing {data.schools.length} of {displayNumber(data.metrics.schools)} schools</footer>}
-      </section>
-      <div className="dashboard-side">
-        <section className="ask-card" aria-labelledby="ask-heading">
-          <span className="ask-icon"><Sparkles size={21} /></span><h2 id="ask-heading">Ask your records</h2><p>Find answers across schools, students, and recent changes.</p>
-          <div className="prompt-list">{prompts.map((prompt) => <button type="button" className="prompt" key={prompt} onClick={() => ask(prompt)} disabled={busy}>{prompt}</button>)}</div>
-          <AskInput onAsk={ask} busy={busy} compact />
-        </section>
-        <section className="card activity-card" aria-labelledby="activity-heading">
-          <header className="card-heading"><h2 id="activity-heading">Recent activity</h2><button type="button" className="text-button view-all" onClick={() => navigate('history')}>View all</button></header>
-          {data ? data.changes.length ? <ul className="activity-list">{data.changes.slice(0, 3).map((row) => <li key={row.id}><button type="button" onClick={() => open('history', row.id)}><ActivityIcon {...row} /><span><strong>{row.entity} {row.operation.toLowerCase()}</strong><small>{row.label}</small></span><time dateTime={row.occurred_at} title={new Date(row.occurred_at).toLocaleString()}>{relativeDate(row.occurred_at)}</time></button></li>)}</ul> : <p className="no-activity">Updates appear here after you save a record.</p> : status !== 'error' && <Loading />}
-        </section>
+    <section className="home-upload" aria-label="Upload and export">
+      <label className={`home-drop${dragging ? ' dragging' : ''}`}
+        onDragOver={(event) => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)}
+        onDrop={(event) => { event.preventDefault(); take(event.dataTransfer.files[0]); }}>
+        <input type="file" className="sr-only" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(event) => { const file = event.target.files[0]; event.target.value = ''; take(file); }} />
+        <span className="home-drop-icon"><Upload size={26} /></span>
+        <strong>Drop a student Excel file here</strong>
+        <small>or click to choose · raw student_data file or the import template · .xlsx</small>
+      </label>
+      <div className="home-actions">
+        <button type="button" className="button primary" onClick={exportFto} disabled={exporting}><FileDown size={18} /> {exporting ? 'Exporting…' : 'Export FTO'}</button>
+        <button type="button" className="button secondary" onClick={() => add('School')}><Plus size={18} /> Add school</button>
       </div>
-    </div>
+    </section>
+    <Metrics data={data?.metrics} navigate={navigate} />
+    <section className="ask-card home-ask" aria-labelledby="ask-heading">
+      <h2 id="ask-heading"><Sparkles size={18} /> Ask your records</h2>
+      <AskInput onAsk={ask} busy={busy} />
+      <div className="prompt-list">{prompts.map((prompt) => <button type="button" className="prompt" key={prompt} onClick={() => ask(prompt)} disabled={busy}>{prompt}</button>)}</div>
+    </section>
   </>;
 }
 
@@ -229,16 +231,16 @@ function Workspace({ localAccess, logout }) {
     <a className="skip-link" href="#main-content" onClick={(event) => { event.preventDefault(); document.getElementById('main-content').focus(); }}>Skip to records</a>
     <Sidebar active={view} navigate={navigate} localAccess={localAccess} open={menu} onClose={() => setMenu(false)} logout={() => logout().catch((cause) => setToast({ text: cause.message, error: true }))} />
     <div className="workspace-main">
-      <header className="topbar"><div className="breadcrumbs"><button type="button" className="icon-button menu-button" aria-label="Open navigation" aria-expanded={menu} onClick={() => setMenu(true)}><Menu size={22} /></button><span>Workspace</span><ChevronRight size={15} /><strong>{viewMeta[view].label}</strong></div><div className="topbar-actions"><button type="button" className="button secondary export-button" onClick={() => exportExcel(undefined, true)} disabled={exporting} title="One sheet in the FTO master layout"><FileDown size={18} /> Export FTO</button><button type="button" className="button secondary export-button" onClick={() => exportExcel()} disabled={exporting}><FileDown size={18} /> {exporting ? 'Exporting…' : 'Export Excel'}</button></div></header>
+      <header className="topbar"><div className="breadcrumbs"><button type="button" className="icon-button menu-button" aria-label="Open navigation" aria-expanded={menu} onClick={() => setMenu(true)}><Menu size={22} /></button><span>Workspace</span><ChevronRight size={15} /><strong>{viewMeta[view].label}</strong></div><div className="topbar-actions">{view !== 'overview' && <button type="button" className="button secondary export-button" onClick={() => exportExcel(undefined, true)} disabled={exporting} title="One sheet in the FTO master layout"><FileDown size={18} /> Export FTO</button>}<button type="button" className="button secondary export-button" onClick={() => exportExcel()} disabled={exporting}><FileDown size={18} /> {exporting ? 'Exporting…' : 'Export Excel'}</button></div></header>
       <main id="main-content" className="content" tabIndex={-1}>
-        {view === 'overview' && <Overview refresh={refresh} navigate={navigate} open={open} add={add} showImport={() => setModal({ type: 'import' })} ask={ask} busy={asking} />}
+        {view === 'overview' && <Overview refresh={refresh} navigate={navigate} add={add} uploadFile={(file) => setModal({ type: 'import', initialFile: file })} exportFto={() => exportExcel(undefined, true)} exporting={exporting} ask={ask} busy={asking} />}
         {view === 'ask' && <Assistant messages={messages} ask={ask} busy={asking} clear={() => setMessages([])} open={open} />}
         {['schools', 'students', 'history'].includes(view) && <Directory key={view === 'history' ? historyMode : view} view={view} refresh={refresh} open={open} add={add} showImport={() => setModal({ type: 'import', studentsOnly: true })} schoolFilter={schoolFilter} setSchoolFilter={setSchoolFilter} historyMode={historyMode} setHistoryMode={setHistoryMode} />}
       </main>
     </div>
     {modal?.type === 'add' && <AddDialog choose={add} close={close} />}
     {modal?.type === 'form' && <RecordForm key={`${modal.kind}:${modal.record?.id ?? 'new'}`} {...modal} close={close} saved={saved} addSchool={() => add('School')} />}
-    {modal?.type === 'import' && <ImportDialog close={close} saved={saved} studentsOnly={modal.studentsOnly} />}
+    {modal?.type === 'import' && <ImportDialog close={close} saved={saved} studentsOnly={modal.studentsOnly} initialFile={modal.initialFile} />}
     {modal?.type === 'record' && <RecordDialog key={`${modal.kind}:${modal.id}`} {...modal} close={close} edit={edit} browse={(school) => { close(); navigate('students', school); }} history={(school) => { close(); navigate('history', school, 'student-uploads'); }} onExport={exportExcel} open={open} />}
     {toast && <div className={`toast${toast.error ? ' error' : ''}`} role={toast.error ? 'alert' : 'status'}>{!toast.error && <Check size={20} />}<span>{toast.text}</span><button type="button" className="icon-button" title="Dismiss message" aria-label="Dismiss message" onClick={() => setToast(null)}><X size={17} /></button></div>}
   </div>;
