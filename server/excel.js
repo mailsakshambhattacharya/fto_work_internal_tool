@@ -1,7 +1,9 @@
 import ExcelJS from 'exceljs';
-import { schoolColumns, studentColumns } from '../shared/workbook.js';
+import { ftoColumns, schoolColumns, studentColumns } from '../shared/workbook.js';
 
 const dateColumn = ['updated_at', 'Updated At (UTC)', 24, 'dd mmm yyyy hh:mm'];
+const uploadDateColumn = ['uploaded_at', 'Uploaded At (UTC)', 24, 'dd mmm yyyy hh:mm:ss'];
+const uploadIdentity = [['id', 'Upload ID', 16], ['school_code', 'School Code', 20, '@'], ['school_name', 'School Name', 35]];
 
 function addSheet(book, name, columns, data, tabColor) {
   const sheet = book.addWorksheet(name, {
@@ -27,7 +29,8 @@ export async function createWorkbook(data) {
   const schoolExtra = [['student_count', 'Enrolled Students', 21], dateColumn];
   const studentExtra = [['school_name', 'School Name', 35], dateColumn];
   const dates = (rows) => rows.map((row) => ({ ...row, updated_at: new Date(row.updated_at) }));
-  addSheet(book, 'Schools', [...schoolColumns, ...(data ? schoolExtra : [])], data ? dates(data.schools) : [], 'FF3758E8');
+  const schools = data ? dates(data.schools).map((row) => ({ ...row, onboarded_on: new Date(`${row.onboarded_on}T00:00:00Z`) })) : [];
+  addSheet(book, 'Schools', [...schoolColumns, ...(data ? schoolExtra : [])], schools, 'FF3758E8');
   addSheet(book, 'Students', [...studentColumns, ...(data ? studentExtra : [])], data ? dates(data.students) : [], 'FF0B8B77');
   if (data) {
     const columns = [
@@ -39,6 +42,37 @@ export async function createWorkbook(data) {
       ...row, occurred_at: new Date(row.occurred_at), field: field.label, before: field.before, after: field.after
     })));
     addSheet(book, 'Update History', columns, rows, 'FF8854C0');
+    const uploads = data.uploads.map((row) => ({ ...row, uploaded_at: new Date(row.uploaded_at) }));
+    addSheet(book, 'Student Uploads', [
+      ...uploadIdentity, ['school_area', 'Area', 24], ['school_city', 'City', 22],
+      ['onboarded_on', 'Onboarded On', 20, 'yyyy-mm-dd'], uploadDateColumn, ['filename', 'Workbook', 37],
+      ['added_count', 'Added', 14], ['updated_count', 'Updated', 14], ['repeated_count', 'Repeats Flagged', 20]
+    ], uploads.map((row) => ({ ...row, onboarded_on: new Date(`${row.onboarded_on}T00:00:00Z`) })), 'FF3769AD');
+    const uploadRows = uploads.flatMap((upload) => upload.row_results.map((row) => ({ ...upload, ...row })));
+    addSheet(book, 'Student Upload Rows', [
+      ...uploadIdentity, uploadDateColumn, ['line', 'Excel Row', 15], ['student_code', 'Student ID', 20, '@'],
+      ['name', 'Student Name', 32], ['outcome', 'Result', 18], ['reason', 'Repeat Reason', 48]
+    ], uploadRows, 'FF3769AD');
+  }
+  return book.xlsx.writeBuffer();
+}
+
+const schoolDetails = ['date', 'school_name', 'principal_name', 'principal_email', 'principal_phone', 'coordinator_name',
+  'coordinator_phone', 'coordinator_email', 'state', 'pincode'];
+
+// Matches the FTO master sheet: a blank row after the header and between schools, with school details on each school's first row.
+export async function createFtoWorkbook(rows) {
+  const book = new ExcelJS.Workbook();
+  book.creator = 'Schooldesk';
+  const sheet = book.addWorksheet('FTO Data', { views: [{ state: 'frozen', ySplit: 1 }] });
+  sheet.columns = ftoColumns.map(([key, header, width, numFmt]) => ({ key, header, width, style: { ...(numFmt && { numFmt }) } }));
+  sheet.getRow(1).font = { bold: true };
+  let school;
+  for (const row of rows) {
+    const first = row.school_id !== school;
+    if (first) sheet.addRow({});
+    school = row.school_id;
+    sheet.addRow(Object.fromEntries(ftoColumns.map(([key]) => [key, first || !schoolDetails.includes(key) ? row[key] ?? '' : ''])));
   }
   return book.xlsx.writeBuffer();
 }

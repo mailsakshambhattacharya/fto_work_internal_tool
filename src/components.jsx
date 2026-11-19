@@ -5,9 +5,11 @@ import { request } from './api.js';
 const number = new Intl.NumberFormat('en-IN');
 const date = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 const dateTime = new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+const calendarDate = new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
 export const displayNumber = (value) => value == null ? '—' : number.format(value);
 export const displayDate = (value) => value ? date.format(new Date(value)) : '—';
 export const displayDateTime = (value) => value ? dateTime.format(new Date(value)) : '—';
+export const displayCalendarDate = (value) => value ? calendarDate.format(new Date(`${value}T00:00:00Z`)) : '—';
 
 export function relativeDate(value) {
   const minutes = Math.round((new Date(value).getTime() - Date.now()) / 60000);
@@ -60,7 +62,7 @@ export function Select({ className = '', children, ...props }) {
 }
 
 export function Badge({ children }) {
-  const tone = { Enrolled: 'green', Graduated: 'blue', Transferred: 'purple', Withdrawn: 'neutral', Added: 'green', Updated: 'blue' }[children] ?? 'neutral';
+  const tone = { Enrolled: 'green', Graduated: 'blue', Transferred: 'purple', Withdrawn: 'neutral', Added: 'green', Updated: 'blue', Repeated: 'amber', Skipped: 'amber' }[children] ?? 'neutral';
   return <span className={`badge ${tone}`}>{children}</span>;
 }
 

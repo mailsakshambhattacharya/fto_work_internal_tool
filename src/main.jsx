@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Building2, Check, ChevronRight, Command, FileDown, FileSpreadsheet, GraduationCap, History, LayoutGrid, LockKeyhole, LogOut, Menu, Plus, Sparkles, Upload, X } from 'lucide-react';
-import { ActivityIcon, AskInput, Brand, displayNumber, Empty, Loading, Notice, Pager, relativeDate, SearchField, Select, useRead, viewMeta } from './components.jsx';
+import { ActivityIcon, AskInput, Brand, displayCalendarDate, displayNumber, Empty, Loading, Notice, Pager, relativeDate, SearchField, Select, useRead, viewMeta } from './components.jsx';
 import { AddDialog, ImportDialog, RecordDialog, RecordForm } from './dialogs.jsx';
 import { RecordTable } from './tables.jsx';
 import { request } from './api.js';
@@ -96,7 +96,7 @@ function Overview({ refresh, navigate, open, add, showImport, ask, busy }) {
   </>;
 }
 
-function Directory({ view, refresh, add, open, schoolFilter, setSchoolFilter }) {
+function Directory({ view, refresh, add, open, showImport, schoolFilter, setSchoolFilter, historyMode, setHistoryMode }) {
   const [search, setSearch] = useState('');
   const [q, setQ] = useState('');
   const [page, setPage] = useState(1);
@@ -104,18 +104,38 @@ function Directory({ view, refresh, add, open, schoolFilter, setSchoolFilter }) 
     const timer = setTimeout(() => { setQ(search.trim()); setPage(1); }, 200);
     return () => clearTimeout(timer);
   }, [search]);
-  const { data, status, error } = useRead(view, { q, page, ...(schoolFilter && view !== 'schools' && { school: schoolFilter }) }, refresh);
+  const kind = view === 'history' ? historyMode : view;
+  const { data, status, error } = useRead(kind, { q, page, ...(schoolFilter && view !== 'schools' && { school: schoolFilter }) }, refresh);
   const options = useRead(view !== 'schools' ? 'school-options' : null, {}, refresh);
   const useSchool = view !== 'schools';
   const singular = view === 'schools' ? 'School' : 'Student';
+  const school = options.data?.find((item) => item.id === schoolFilter);
+  const searchLabel = { schools: 'Search schools', students: 'Search students', history: 'Search record changes', 'student-uploads': 'Search student uploads' }[kind];
   return <>
-    <PageHeader view={view} actions={view !== 'history' && <button className="button primary" onClick={() => add(singular, view === 'students' ? schoolFilter : undefined)}><Plus size={19} /> Add {singular.toLowerCase()}</button>} />
+    <PageHeader view={view} actions={view !== 'history' && <>
+      {view === 'students' && <button className="button secondary" type="button" onClick={showImport}><Upload size={17} /> Upload students</button>}
+      <button className="button primary" onClick={() => add(singular, view === 'students' ? schoolFilter : undefined)}><Plus size={19} /> Add {singular.toLowerCase()}</button>
+    </>} />
     <section className="card directory-card" aria-label={viewMeta[view].label}>
-      <div className="table-toolbar"><SearchField value={search} onChange={setSearch} placeholder={view === 'history' ? 'Search update history' : `Search ${view}`} />
+      {view === 'history' && <div className="history-switch" aria-label="History view">
+        <button type="button" aria-pressed={kind === 'history'} onClick={() => setHistoryMode('history')}>Record changes</button>
+        <button type="button" aria-pressed={kind === 'student-uploads'} onClick={() => setHistoryMode('student-uploads')}>Student uploads</button>
+      </div>}
+      <div className="table-toolbar"><SearchField value={search} onChange={setSearch} placeholder={searchLabel} />
         {useSchool && <Select className="filter-select" value={schoolFilter} aria-label="Filter by school" onChange={(event) => { setPage(1); setSchoolFilter(event.target.value); }}><option value="">All schools</option>{options.data?.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</Select>}
         {data && <span className="results-label">{displayNumber(data.total)} {data.total === 1 ? 'result' : 'results'}</span>}
       </div>
-      {error ? <div className="table-error"><Notice>{error}</Notice></div> : data ? <><RecordTable kind={view} onOpen={open} rows={data.rows} /><Pager result={data} setPage={setPage} /></> : status === 'loading' && <Loading />}
+      {view === 'history' && school && <div className="history-school">
+        <button className="text-button inline-link" type="button" onClick={() => open('schools', school.id)}>{school.name}</button>
+        <span>Onboarded {displayCalendarDate(school.onboarded_on)}</span>
+        {(school.area || school.city) && <span>{[school.area, school.city].filter(Boolean).join(', ')}</span>}
+      </div>}
+      {kind === 'student-uploads' && data?.summary && <dl className="upload-totals">
+        <div><dt>Students added</dt><dd>{displayNumber(data.summary.added_count)}</dd></div>
+        <div><dt>Students updated</dt><dd>{displayNumber(data.summary.updated_count)}</dd></div>
+        <div><dt>Repeats flagged</dt><dd>{displayNumber(data.summary.repeated_count)}</dd></div>
+      </dl>}
+      {error ? <div className="table-error"><Notice>{error}</Notice></div> : data ? <><RecordTable kind={kind} onOpen={open} rows={data.rows} /><Pager result={data} setPage={setPage} /></> : status === 'loading' && <Loading />}
     </section>
   </>;
 }
@@ -144,13 +164,14 @@ function Workspace({ localAccess, logout }) {
   const [modal, setModal] = useState(null);
   const [refresh, setRefresh] = useState(0);
   const [schoolFilter, setSchoolFilter] = useState('');
+  const [historyMode, setHistoryMode] = useState('history');
   const [toast, setToast] = useState(null);
   const [exporting, setExporting] = useState(false);
   const [messages, setMessages] = useState([]);
   const [asking, setAsking] = useState(false);
 
   useEffect(() => {
-    const sync = () => { setView(initialView()); setSchoolFilter(''); };
+    const sync = () => { setView(initialView()); setSchoolFilter(''); setHistoryMode('history'); };
     window.addEventListener('popstate', sync);
     window.addEventListener('hashchange', sync);
     return () => { window.removeEventListener('popstate', sync); window.removeEventListener('hashchange', sync); };
@@ -161,11 +182,12 @@ function Workspace({ localAccess, logout }) {
     return () => clearTimeout(timer);
   }, [toast]);
 
-  function navigate(next, school = '') {
+  function navigate(next, school = '', mode = 'history') {
     if (next !== view) window.history.pushState(null, '', next === 'overview' ? window.location.pathname : `#${next}`);
     setMenu(false);
     setView(next);
     setSchoolFilter(school);
+    if (next === 'history') setHistoryMode(mode);
     window.scrollTo(0, 0);
   }
 
@@ -173,12 +195,20 @@ function Workspace({ localAccess, logout }) {
   const add = (kind, school) => setModal(kind ? { type: 'form', kind, school } : { type: 'add' });
   const open = (kind, id) => setModal({ type: 'record', kind, id });
   const edit = (kind, record) => setModal({ type: 'form', kind, record });
-  const saved = (text) => { close(); setRefresh((value) => value + 1); setToast({ text }); };
+  const saved = (text, uploadId) => {
+    if (uploadId) open('student-uploads', uploadId);
+    else close();
+    setRefresh((value) => value + 1);
+    setToast({ text });
+  };
 
-  async function exportExcel(school) {
+  async function exportExcel(school, fto = false) {
     if (exporting) return;
     setExporting(true);
-    try { await request('export', { params: school ? { school } : {}, file: true }); setToast({ text: 'Excel workbook downloaded.' }); }
+    try {
+      await request(fto ? 'export-fto' : 'export', { params: school ? { school } : {}, file: true });
+      setToast({ text: fto ? 'FTO sheet downloaded.' : 'Excel workbook downloaded.' });
+    }
     catch (cause) { setToast({ text: cause.message, error: true }); }
     finally { setExporting(false); }
   }
@@ -199,17 +229,17 @@ function Workspace({ localAccess, logout }) {
     <a className="skip-link" href="#main-content" onClick={(event) => { event.preventDefault(); document.getElementById('main-content').focus(); }}>Skip to records</a>
     <Sidebar active={view} navigate={navigate} localAccess={localAccess} open={menu} onClose={() => setMenu(false)} logout={() => logout().catch((cause) => setToast({ text: cause.message, error: true }))} />
     <div className="workspace-main">
-      <header className="topbar"><div className="breadcrumbs"><button type="button" className="icon-button menu-button" aria-label="Open navigation" aria-expanded={menu} onClick={() => setMenu(true)}><Menu size={22} /></button><span>Workspace</span><ChevronRight size={15} /><strong>{viewMeta[view].label}</strong></div><button type="button" className="button secondary export-button" onClick={() => exportExcel()} disabled={exporting}><FileDown size={18} /> {exporting ? 'Exporting…' : 'Export Excel'}</button></header>
+      <header className="topbar"><div className="breadcrumbs"><button type="button" className="icon-button menu-button" aria-label="Open navigation" aria-expanded={menu} onClick={() => setMenu(true)}><Menu size={22} /></button><span>Workspace</span><ChevronRight size={15} /><strong>{viewMeta[view].label}</strong></div><div className="topbar-actions"><button type="button" className="button secondary export-button" onClick={() => exportExcel(undefined, true)} disabled={exporting} title="One sheet in the FTO master layout"><FileDown size={18} /> Export FTO</button><button type="button" className="button secondary export-button" onClick={() => exportExcel()} disabled={exporting}><FileDown size={18} /> {exporting ? 'Exporting…' : 'Export Excel'}</button></div></header>
       <main id="main-content" className="content" tabIndex={-1}>
         {view === 'overview' && <Overview refresh={refresh} navigate={navigate} open={open} add={add} showImport={() => setModal({ type: 'import' })} ask={ask} busy={asking} />}
         {view === 'ask' && <Assistant messages={messages} ask={ask} busy={asking} clear={() => setMessages([])} open={open} />}
-        {['schools', 'students', 'history'].includes(view) && <Directory key={view} view={view} refresh={refresh} open={open} add={add} schoolFilter={schoolFilter} setSchoolFilter={setSchoolFilter} />}
+        {['schools', 'students', 'history'].includes(view) && <Directory key={view === 'history' ? historyMode : view} view={view} refresh={refresh} open={open} add={add} showImport={() => setModal({ type: 'import', studentsOnly: true })} schoolFilter={schoolFilter} setSchoolFilter={setSchoolFilter} historyMode={historyMode} setHistoryMode={setHistoryMode} />}
       </main>
     </div>
     {modal?.type === 'add' && <AddDialog choose={add} close={close} />}
     {modal?.type === 'form' && <RecordForm key={`${modal.kind}:${modal.record?.id ?? 'new'}`} {...modal} close={close} saved={saved} addSchool={() => add('School')} />}
-    {modal?.type === 'import' && <ImportDialog close={close} saved={saved} />}
-    {modal?.type === 'record' && <RecordDialog key={`${modal.kind}:${modal.id}`} {...modal} close={close} edit={edit} browse={(school) => { close(); navigate('students', school); }} onExport={exportExcel} open={open} />}
+    {modal?.type === 'import' && <ImportDialog close={close} saved={saved} studentsOnly={modal.studentsOnly} />}
+    {modal?.type === 'record' && <RecordDialog key={`${modal.kind}:${modal.id}`} {...modal} close={close} edit={edit} browse={(school) => { close(); navigate('students', school); }} history={(school) => { close(); navigate('history', school, 'student-uploads'); }} onExport={exportExcel} open={open} />}
     {toast && <div className={`toast${toast.error ? ' error' : ''}`} role={toast.error ? 'alert' : 'status'}>{!toast.error && <Check size={20} />}<span>{toast.text}</span><button type="button" className="icon-button" title="Dismiss message" aria-label="Dismiss message" onClick={() => setToast(null)}><X size={17} /></button></div>}
   </div>;
 }
