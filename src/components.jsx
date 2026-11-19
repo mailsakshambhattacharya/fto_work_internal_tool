@@ -116,6 +116,7 @@ export function AskInput({ onAsk, busy, compact = false }) {
 
 export const viewMeta = {
   overview: { label: 'Overview', title: 'School records', description: 'Drop a school’s student file, then export the consolidated FTO sheet.' },
+  fto: { label: 'FTO sheet', title: 'FTO sheet', description: 'The latest consolidated sheet, exactly as Export FTO downloads it.', icon: FileSpreadsheet },
   schools: { label: 'Schools', title: 'Schools', description: 'Find schools and maintain their principal details.', icon: Building2 },
   students: { label: 'Students', title: 'Students', description: 'Find and update student records across all schools.', icon: GraduationCap },
   history: { label: 'Update history', title: 'Update history', description: 'See what changed, when it changed, and how it was saved.', icon: History },

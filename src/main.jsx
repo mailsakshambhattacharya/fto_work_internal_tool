@@ -4,11 +4,12 @@ import { Building2, Check, ChevronRight, Command, FileDown, FileSpreadsheet, Gra
 import { ActivityIcon, AskInput, Brand, displayCalendarDate, displayNumber, Empty, Loading, Notice, Pager, relativeDate, SearchField, Select, useRead, viewMeta } from './components.jsx';
 import { AddDialog, ImportDialog, RecordDialog, RecordForm } from './dialogs.jsx';
 import { RecordTable } from './tables.jsx';
+import { FtoPreview } from './fto.jsx';
 import { request } from './api.js';
 import './styles.css';
 
 const navigations = [
-  ['overview', LayoutGrid], ['schools', Building2], ['students', GraduationCap], ['history', History], ['ask', Sparkles]
+  ['overview', LayoutGrid], ['fto', FileSpreadsheet], ['schools', Building2], ['students', GraduationCap], ['history', History], ['ask', Sparkles]
 ];
 const initialView = () => Object.hasOwn(viewMeta, window.location.hash.slice(1)) ? window.location.hash.slice(1) : 'overview';
 const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -95,6 +96,7 @@ function Overview({ refresh, navigate, add, uploadFile, exportFto, exporting, as
       <AskInput onAsk={ask} busy={busy} />
       <div className="prompt-list">{prompts.map((prompt) => <button type="button" className="prompt" key={prompt} onClick={() => ask(prompt)} disabled={busy}>{prompt}</button>)}</div>
     </section>
+    <FtoPreview refresh={refresh} compact openFull={() => navigate('fto')} />
   </>;
 }
 
@@ -231,9 +233,10 @@ function Workspace({ localAccess, logout }) {
     <a className="skip-link" href="#main-content" onClick={(event) => { event.preventDefault(); document.getElementById('main-content').focus(); }}>Skip to records</a>
     <Sidebar active={view} navigate={navigate} localAccess={localAccess} open={menu} onClose={() => setMenu(false)} logout={() => logout().catch((cause) => setToast({ text: cause.message, error: true }))} />
     <div className="workspace-main">
-      <header className="topbar"><div className="breadcrumbs"><button type="button" className="icon-button menu-button" aria-label="Open navigation" aria-expanded={menu} onClick={() => setMenu(true)}><Menu size={22} /></button><span>Workspace</span><ChevronRight size={15} /><strong>{viewMeta[view].label}</strong></div><div className="topbar-actions">{view !== 'overview' && <button type="button" className="button secondary export-button" onClick={() => exportExcel(undefined, true)} disabled={exporting} title="One sheet in the FTO master layout"><FileDown size={18} /> Export FTO</button>}<button type="button" className="button secondary export-button" onClick={() => exportExcel()} disabled={exporting}><FileDown size={18} /> {exporting ? 'Exporting…' : 'Export Excel'}</button></div></header>
+      <header className="topbar"><div className="breadcrumbs"><button type="button" className="icon-button menu-button" aria-label="Open navigation" aria-expanded={menu} onClick={() => setMenu(true)}><Menu size={22} /></button><span>Workspace</span><ChevronRight size={15} /><strong>{viewMeta[view].label}</strong></div><div className="topbar-actions">{!['overview', 'fto'].includes(view) && <button type="button" className="button secondary export-button" onClick={() => exportExcel(undefined, true)} disabled={exporting} title="One sheet in the FTO master layout"><FileDown size={18} /> Export FTO</button>}<button type="button" className="button secondary export-button" onClick={() => exportExcel()} disabled={exporting}><FileDown size={18} /> {exporting ? 'Exporting…' : 'Export Excel'}</button></div></header>
       <main id="main-content" className="content" tabIndex={-1}>
         {view === 'overview' && <Overview refresh={refresh} navigate={navigate} add={add} uploadFile={(file) => setModal({ type: 'import', initialFile: file })} exportFto={() => exportExcel(undefined, true)} exporting={exporting} ask={ask} busy={asking} />}
+        {view === 'fto' && <><PageHeader view="fto" /><FtoPreview refresh={refresh} onExport={() => exportExcel(undefined, true)} exporting={exporting} /></>}
         {view === 'ask' && <Assistant messages={messages} ask={ask} busy={asking} clear={() => setMessages([])} open={open} />}
         {['schools', 'students', 'history'].includes(view) && <Directory key={view === 'history' ? historyMode : view} view={view} refresh={refresh} open={open} add={add} showImport={() => setModal({ type: 'import', studentsOnly: true })} schoolFilter={schoolFilter} setSchoolFilter={setSchoolFilter} historyMode={historyMode} setHistoryMode={setHistoryMode} />}
       </main>

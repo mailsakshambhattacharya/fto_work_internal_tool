@@ -85,6 +85,7 @@ export function createHandler({ getDb, env = process.env, localAccess = false })
         if (action === 'school-options') return json(res, 200, (await db.query(`SELECT id, code, name, area, city, to_char(onboarded_on, 'YYYY-MM-DD') AS onboarded_on FROM schools ORDER BY lower(name), code`)).rows);
         if (['schools', 'students', 'history', 'student-uploads'].includes(action)) return json(res, 200, await directory(db, action, params));
         if (action === 'record') return json(res, 200, await getRecord(db, params.kind, params.id));
+        if (action === 'fto') return json(res, 200, { rows: await ftoRows(db, params.school) });
         if (action === 'export-fto') {
           const day = new Date().toISOString().slice(0, 10);
           return download(res, await createFtoWorkbook(await ftoRows(db, params.school)), `fto-data-${day}.xlsx`);
