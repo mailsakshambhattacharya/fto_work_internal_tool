@@ -2,7 +2,8 @@ import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { RequestError } from './records.js';
 
 const cookieName = 'schooldesk_session';
-const sessionSeconds = 12 * 60 * 60;
+// Stay signed in for 30 days so the sync skill can run without asking for the password each time.
+const sessionSeconds = 30 * 24 * 60 * 60;
 const signature = (key, payload) => createHmac('sha256', key).update(payload).digest('base64url');
 const safeEqual = (left, right) => timingSafeEqual(createHash('sha256').update(left).digest(), createHash('sha256').update(right).digest());
 
