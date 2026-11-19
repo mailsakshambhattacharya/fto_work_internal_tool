@@ -10,7 +10,7 @@ import { readImport } from '../src/import.js';
 test('registry sign-in, atomic workbook import, audited edits, export, and answers', async (context) => {
   const db = new PGlite();
   await db.exec(schema);
-  const env = { APP_PASSWORD: 'test-workspace-only-26', APP_SESSION_SECRET: 'test-session-secret-not-for-deployment' };
+  const env = { APP_PASSWORD: 'tester-only!', APP_SESSION_SECRET: 'test-session-secret-not-for-deployment' };
   const server = createServer(createHandler({ getDb: async () => db, env }));
   await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
   context.after(async () => {

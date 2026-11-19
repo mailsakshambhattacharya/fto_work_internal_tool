@@ -33,7 +33,7 @@ Import the GitHub repository into the Vercel account that will own the app. Vite
 | Environment variable | Value |
 | --- | --- |
 | `DATABASE_URL` | Postgres connection URL. A pooled URL from the database provider works with the serverless API. `POSTGRES_URL` is also accepted. |
-| `APP_PASSWORD` | A randomly generated workspace password, at least 16 characters. |
+| `APP_PASSWORD` | The workspace password, at least 12 characters. |
 | `APP_SESSION_SECRET` | A separate random secret, at least 32 characters, for signing sessions. |
 
 Deploy from the intended Vercel account. The first authenticated request for records initializes the database schema. To initialize it manually, set the database URL in your shell or in a gitignored `.env.local` and run `npm run db:migrate`. Verify that an unauthenticated visitor sees the sign-in screen and that you can sign in and export an empty workbook. Production starts with an empty registry.

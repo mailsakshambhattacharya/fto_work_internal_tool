@@ -9,7 +9,7 @@ const safeEqual = (left, right) => timingSafeEqual(createHash('sha256').update(l
 export function authFor(env, localAccess) {
   const password = env.APP_PASSWORD;
   const secret = env.APP_SESSION_SECRET;
-  const ready = typeof password === 'string' && password.length >= 16 && typeof secret === 'string' && secret.length >= 32;
+  const ready = typeof password === 'string' && password.length >= 12 && typeof secret === 'string' && secret.length >= 32;
   const cookie = (value, age) => `${cookieName}=${value}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${age}${env.NODE_ENV === 'production' || env.VERCEL ? '; Secure' : ''}`;
   return {
     ready: localAccess || ready,
