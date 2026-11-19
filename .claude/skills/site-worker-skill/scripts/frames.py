@@ -13,6 +13,7 @@ Needs ffmpeg. Optional: Pillow (boxes and close-ups) and faster-whisper (speech)
 `pip install pillow faster-whisper`. Without them it still writes frames and the timeline.
 """
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -127,8 +128,11 @@ def main():
     args = [arg for arg in argv if not arg.startswith('--')]
     if len(args) < 2:
         sys.exit(__doc__)
+    links = Path(os.environ.get('LOCALAPPDATA', '')) / 'Microsoft' / 'WinGet' / 'Links'
+    if not shutil.which('ffmpeg') and (links / 'ffmpeg.exe').is_file():
+        os.environ['PATH'] = f"{links}{os.pathsep}{os.environ['PATH']}"  # just installed; not on PATH until a new terminal
     if not shutil.which('ffmpeg') or not shutil.which('ffprobe'):
-        sys.exit('ffmpeg is not installed. Install it (winget install Gyan.FFmpeg) or send screenshots instead.')
+        sys.exit('ffmpeg is not installed. Run setup.py --install, or send screenshots instead.')
     video, out = Path(args[0]), Path(args[1])
     if not video.is_file():
         sys.exit(f'Recording not found: {video}')

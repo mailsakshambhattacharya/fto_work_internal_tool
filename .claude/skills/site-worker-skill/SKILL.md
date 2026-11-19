@@ -9,7 +9,7 @@ Watches how the user does a task on a website, works out what they actually mean
 
 **Who it's for:** people who aren't technical. Everything shown to the user must make sense to someone who has never written code.
 
-**The flow:** check saved workflows → link → recording + description → understand → ask smart questions → workflow card → "go" → trial on one item → do the rest → report → save.
+**The flow:** setup check (installs what's missing, once) → check saved workflows → link → recording + description → understand → ask smart questions → workflow card → "go" → trial on one item → do the rest → report → save.
 
 ## How to talk to the user
 
@@ -53,6 +53,33 @@ Create the folder if needed. Name each file `<short-name>.md`, for example `mond
 ```
 
 Never save passwords, card numbers, or other secrets. If you can't write files (for example, in the Claude app without file access), give the user the workflow card as text at the end and tell them to paste it next time.
+
+## Setup: check what's needed (every time, before anything else)
+
+Run:
+
+```
+python "<this skill's folder>/scripts/setup.py"
+```
+
+It checks for three things and ends with one status word:
+- **READY:** everything is there. Say nothing about setup and go on.
+- **READY_BASIC:** videos work, but close-ups and/or speech are missing.
+- **MISSING_FFMPEG:** videos can't be read yet.
+
+For anything other than READY, ask once, in plain words:
+
+> **Before we start · Quick setup**
+> To watch your screen recordings I need a few free tools on this computer: <list the MISSING items from the output in plain words, e.g. "a video reader" and "speech understanding">. It takes a few minutes, one time only.
+> a) Install them now *(suggested)*
+> b) Skip. I'll work from screenshots and your description instead.
+
+- **a:** run `python "<this skill's folder>/scripts/setup.py" --install` and wait. While it runs, say "Installing, this can take a few minutes…". When it finishes, it prints the status again. If it now says READY or READY_BASIC, say "All set." and continue. If installing failed, say so in one plain sentence and continue with option b.
+- **b:** continue, and ask for screenshots instead of a video in step 2.
+
+Also check the browser once: if Claude in Chrome isn't connected, say: "One more thing: please install the **Claude in Chrome** extension from the Chrome Web Store and sign in to it, then reply 'done'." Wait for 'done'. In the Claude desktop app's Code tab you can use its built-in browser instead, and you can skip this.
+
+If Python itself isn't available, for example in the Claude app with no computer access, skip setup and work from screenshots and the description.
 
 ## 0. Check for saved workflows
 
@@ -100,7 +127,7 @@ The helper writes:
 
 Work through every row in the timeline. For each moment, look at the marked frame and the close-up, and write down what was clicked, typed, opened, or downloaded.
 
-If the helper says ffmpeg is missing, tell the user: "I need a free tool called ffmpeg to read videos. Open PowerShell and run `winget install Gyan.FFmpeg`, then send the video again, or send screenshots instead." If speech or close-ups are skipped, it still works; you can mention `pip install pillow faster-whisper` for better results.
+If the helper says ffmpeg is missing, go back to **Setup** and offer to install it. The first time speech is used, the speech model downloads by itself (about 150 MB); tell the user "First time only: getting the speech reader ready…".
 
 ## 3. Understand: what they did vs. what they mean
 
