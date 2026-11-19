@@ -13,7 +13,7 @@ The flow is always the same: **check past tasks → link → recording + descrip
 
 Every confirmed task is saved as one file in the task folder, so it can be run again:
 
-- Windows: `%USERPROFILE%\Documents\site-worker	asks\`
+- Windows: `%USERPROFILE%/Documents/site-worker/tasks/` (Windows accepts forward slashes)
 - Mac or Linux: `~/Documents/site-worker/tasks/`
 
 Create the folder if it doesn't exist. Each task file is named `<short-name>.md`, for example `school-downloads.md`, and uses this layout:
@@ -106,11 +106,15 @@ When the user confirms, save the task file right away (see **Task folder**) befo
 
 Once the user says go (or yes, ok, start):
 
-- Work in the user's Chrome with Claude in Chrome. Open a new tab at the link.
+- Work in the user's Chrome with Claude in Chrome. Open a new tab at the link. If Claude in Chrome isn't connected, tell the user to open Chrome and sign in to the Claude extension. In the Claude desktop app's Code tab you can use its built-in browser instead.
 - Follow the confirmed steps exactly. Don't add steps the user didn't confirm.
 - After every 5 items (or each item, if there are fewer than 10), post a one-line progress update, for example "12/43 done, 1 skipped".
-- If an item fails or doesn't match the pattern, skip it, note why, and carry on.
-- Downloads: save where the confirmed plan says. If a file name doesn't say what it belongs to, rename it so it does.
+- If an item fails, retry it once. If it fails again, skip it, note why, and carry on.
+- **Check every download.** A "downloaded" message on the site doesn't prove the file arrived. After each download:
+  1. Wait up to 15 seconds for a new, finished file in the Downloads folder. Ignore `.tmp` and `.crdownload` files.
+  2. If you can read it, open it and check it's for the right item, for example that it names the right school. A late download can belong to the previous item.
+  3. Rename and move it where the plan says, before starting the next item. Sites often give every download the same name.
+  4. If no file arrives, retry once. If the second download is missing too, the browser may be blocking "multiple downloads" from the site. Ask the user to click **Allow** in the browser, then continue.
 
 ## When to stop and ask
 

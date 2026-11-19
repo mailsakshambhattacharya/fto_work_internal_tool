@@ -50,8 +50,15 @@ def main():
         sys.exit(f'Recording not found: {video}')
     out.mkdir(parents=True, exist_ok=True)
     length = duration(video)
-    # The first frame, any frame where ~6% of the screen changed, and one every 3s while nothing changes.
-    frames = extract(video, out, "select='isnan(prev_selected_t)+gt(scene,0.06)+gte(t-prev_selected_t,3)',scale='min(1440,iw)':-2")
+    # The first frame, any visible change (a cursor move or a small pop-up counts), and one every 3s while still.
+    frames = extract(video, out, "select='isnan(prev_selected_t)+gt(scene,0.0005)*gte(t-prev_selected_t,0.5)+gte(t-prev_selected_t,3)',scale='min(1440,iw)':-2")
+    # Always keep the final frame: the result of the last click (a download message, a saved page) is usually there.
+    if length and (not frames or length - frames[-1][1] > 0.3):
+        last = out / f'frame_{len(frames) + 1:04d}.png'
+        # Decode the last 2 seconds and keep overwriting one image, which leaves the final frame.
+        run(['ffmpeg', '-v', 'error', '-y', '-sseof', '-2', '-i', str(video), '-update', '1', '-vf', "scale='min(1440,iw)':-2", str(last)])
+        if last.is_file():
+            frames.append((last, length))
     if len(frames) > limit:
         keep = {round(i * (len(frames) - 1) / max(1, limit - 1)) for i in range(limit)}
         for index, (frame, _) in enumerate(frames):
